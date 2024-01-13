@@ -67,7 +67,11 @@ server.post("/signup",(req,res)=>{
         let user= new User({
             personal_info:{fullname,email,password: hashed_password,username}
         })
+<<<<<<< HEAD
 
+=======
+        console.log(user);
+>>>>>>> 6c7bd02 (changes due to mongo db error)
         user.save().then((u)=>{
             return res.status(200).json(formatDatatoSend(u))
         })
