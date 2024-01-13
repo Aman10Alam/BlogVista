@@ -2,10 +2,9 @@ import AnimationWrapper from "../common/page-animation"
 import InputBox from "../components/input.component"
 import googleIcon from "../imgs/google.png"
 import { Link } from "react-router-dom"
-<<<<<<< HEAD
 
-const User= ({type})=>{
-=======
+
+
 import { useRef } from "react"
 import {Toaster,toast} from "react-hot-toast"
 
@@ -50,17 +49,18 @@ const UserAuthForm= ({type})=>{
 
      console.log(formData);
    }
->>>>>>> 6c7bd02 (changes due to mongo db error)
+
+   
     return(
         <>
         <AnimationWrapper keyValue={type}>
           <section className="h-cover flex items-center justify-center">
-<<<<<<< HEAD
-              <form className="w-[80%] max-w-[400px]">
-=======
-            <Toaster/>
+
+             
+
+           <Toaster/>
               <form ref={authForm} className="w-[80%] max-w-[400px]">
->>>>>>> 6c7bd02 (changes due to mongo db error)
+ 
                 <h1 className="text-4xl font-gelasio capitalize text-center mb-24">
                   {type == "sign-in" ? "Welcome back":"Join us today"}
                 </h1>
@@ -90,12 +90,9 @@ const UserAuthForm= ({type})=>{
                   icon="fi-rr-key"
                 />
 
-<<<<<<< HEAD
-                <button className="btn-dark center mt-14" type="submit">
-=======
+                
                 <button className="btn-dark center mt-14" type="submit"
                 onClick={handleSubmit}>
->>>>>>> 6c7bd02 (changes due to mongo db error)
                   {type.replace("-"," ")}
                 </button>
 
@@ -139,9 +136,4 @@ const UserAuthForm= ({type})=>{
         </>
     )
 }
-
-<<<<<<< HEAD
-export default User
-=======
 export default UserAuthForm
->>>>>>> 6c7bd02 (changes due to mongo db error)

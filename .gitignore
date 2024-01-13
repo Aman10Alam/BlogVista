@@ -1,9 +1,10 @@
 frontend/node_modules
 server/node_modules
-<<<<<<< HEAD
 *.env
-=======
 server/.env
 server/requests.rest
 node_modules
->>>>>>> 6c7bd02 (changes due to mongo db error)
+frontend/package-lock.json
+server/package-lock.json
+package-lock.json
+
