@@ -7,4 +7,5 @@ node_modules
 frontend/package-lock.json
 server/package-lock.json
 package-lock.json
-
+server/blogvista-45c3a-firebase-adminsdk-ukew7-fbdcc90f2d.json
+frontend/src/common/firebase.jsx

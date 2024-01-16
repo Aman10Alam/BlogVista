@@ -4,16 +4,22 @@ import 'dotenv/config'
 import bcrypt from 'bcrypt'
 import { nanoid } from 'nanoid';
 import jwt from 'jsonwebtoken'
-
+import cors from 'cors';
 import User from './Schema/User.js';
-
+import admin from 'firebase-admin';
+import serviceAccountKey from "./blogvista-45c3a-firebase-adminsdk-ukew7-fbdcc90f2d.json" assert { type:"json"};
+import {getAuth} from "firebase-admin/auth";
 
 const server=express();
 let PORT=3000;
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccountKey),
+})
+
 let emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 let passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
-
+server.use(cors()) // this enables server to accept data from any port
 
 server.use(express.json()); // basically it enables json type of data being shared btw frontend and backend
 
@@ -68,7 +74,7 @@ server.post("/signup",(req,res)=>{
             personal_info:{fullname,email,password: hashed_password,username}
         })
 
-        console.log(user);
+        //console.log(user);
         user.save().then((u)=>{
             return res.status(200).json(formatDatatoSend(u))
         })
@@ -104,14 +110,58 @@ server.post("/signin",(req,res)=>{
                 return res.status(200).json(formatDatatoSend(user))
             }
         })
-        //console.log(user)
-        //return res.status(200).json("status ok")
+        
     })
     .catch((err)=>{
         console.log(err);
         return res.status(500).json({"error":err.message});
     })
    
+})
+
+server.post("/google-auth",async(req,res)=>{
+    let {access_token}=req.body;
+
+    getAuth()
+    .verifyIdToken(access_token)
+    .then(async(decodedUser)=>{
+        let {email,name,picture}=decodedUser;
+
+        picture= picture.replace("s96-c","s384-c"); // to get high resolution profile image
+
+        let user = await User.findOne({"personal_info.email":email}).select("personal_info.fullname personal_info.username personal_info.profile_img google_auth").then((u)=>{
+            return u || null
+        })
+        .catch((err) =>{
+            return res.status(500).json({"error": err.message});
+        })
+
+        if(user){
+            if(!user.google_auth){
+                return res.status(403).json({"error":"This email was signed up without google.Please log in with password to access the account"})
+            }
+        }
+        else{
+            let username=await generateUserName(email);
+            user= new User({
+                personal_info:{fullname: name,email,profile_img:picture,
+                username},
+                google_auth:true
+            })
+
+            await user.save().then((u)=>{
+                user=u;
+            })
+            .catch(err=>{
+                return res.status(500).json({"error":err.message})
+            })
+        }
+
+        return res.status(200).json(formatDatatoSend(user));
+    })
+    .catch(err=>{
+        return res.status(500).json({"error":"Failed to authenticate you with google.Try with some other google account"})
+    })
 })
 server.listen(PORT,()=>{
     console.log( 'listening on port ->'+PORT);
