@@ -1,6 +1,5 @@
 node_modules
 *.env
-*.json
 server/blogvista-45c3a-firebase-adminsdk-ukew7-fbdcc90f2d.json
-frontend/src/common/firebase.jsx
 server/requests.rest
+frontend/src/common/firebase.jsx

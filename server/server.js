@@ -9,6 +9,8 @@ import User from './Schema/User.js';
 import admin from 'firebase-admin';
 import serviceAccountKey from "./blogvista-45c3a-firebase-adminsdk-ukew7-fbdcc90f2d.json" assert { type:"json"};
 import {getAuth} from "firebase-admin/auth";
+import aws from "aws-sdk";
+
 
 const server=express();
 let PORT=3000;
@@ -26,6 +28,26 @@ server.use(express.json()); // basically it enables json type of data being shar
 mongoose.connect(process.env.DB_LOCATION,{
     autoIndex:true
 });
+
+
+//setting up aws s3 bucket 
+const s3=new aws.S3({
+    region: 'ap-south-1',
+    accessKeyId : process.env.AWS_ACCESS_KEY ,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+})
+
+const generateUploadURL=async ()=>{
+    const date= new Date();
+    const imageName= `${nanoid()}-${date.getTime()}.jpeg`;
+
+    return await s3.getSignedUrlPromise('putObject',{ // accessing the aws bucket to get image link hence await as it takes some time
+        Bucket:'blogvista1',
+        Key: imageName,
+        Expires: 1000,
+        ContentType: "image/jpeg"
+    })
+}
 
 const formatDatatoSend=(user)=>{
     const access_token=jwt.sign({id: user._id},process.env.SECRET_ACCESS_KEY);
@@ -47,6 +69,14 @@ const generateUserName = async(email)=>{
 
     return username;
 }
+
+server.get('/get-upload-url',(req,res)=>{
+    generateUploadURL().then(url=> res.status(200).json({uploadURL: url}))
+    .catch(err=>{
+        console.log(err.message);
+        return res.status(500).json({error: err.message});
+    })
+})
 server.post("/signup",(req,res)=>{
     
     let {fullname,email,password}= req.body;
@@ -97,19 +127,24 @@ server.post("/signin",(req,res)=>{
         if(!user){
             return res.status(403).json({"error":"email does not exist"})
         }
+        
+        if(!user.google_auth){
+            bcrypt.compare(password,user.personal_info.password,(err,result)=>{
 
-        bcrypt.compare(password,user.personal_info.password,(err,result)=>{
-
-            if(err){
-                return res.status(500).json({"error": "Error has occured please login again"})
-            }
-
-            if(!result){
-                return res.status(403).json({"error":"Incorrect password"})
-            }else{
-                return res.status(200).json(formatDatatoSend(user))
-            }
-        })
+                if(err){
+                    return res.status(500).json({"error": "Error has occured please login again"})
+                }
+    
+                if(!result){
+                    return res.status(403).json({"error":"Incorrect password"})
+                }else{
+                    return res.status(200).json(formatDatatoSend(user))
+                }
+            })
+        }
+        else{
+            return res.status(403).json({"error":"Account was logged in through google.Try logging in with google"})
+        }
         
     })
     .catch((err)=>{
@@ -144,7 +179,7 @@ server.post("/google-auth",async(req,res)=>{
         else{
             let username=await generateUserName(email);
             user= new User({
-                personal_info:{fullname: name,email,profile_img:picture,
+                personal_info:{fullname: name,email,
                 username},
                 google_auth:true
             })
