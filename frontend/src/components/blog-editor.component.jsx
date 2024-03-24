@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import logo from '../imgs/logo.png'
 import AnimationWrapper from "../common/page-animation"
 import defaultBanner from "../imgs/blog banner.png"
@@ -8,6 +8,8 @@ import {Toaster ,toast} from "react-hot-toast";
 import { EditorContext } from "../pages/editor.pages";
 import EditorJS from "@editorjs/editorjs";
 import tools from "./tools.component";
+import axios from "axios";
+import { UserContext } from "../App"
 
 const BlogEditor = ()=>{
 
@@ -15,13 +17,19 @@ const BlogEditor = ()=>{
     let {blog, blog:{ title, banner,content,tags,des,author: {personal_info:{}}},setBlog ,
     textEditor,setTextEditor ,setEditorState}=useContext(EditorContext)// destructuring the exported objects and functions
     
+    let {userAuth:{ access_token}}=useContext(UserContext);
+    let navigate= useNavigate();
+
     useEffect(()=>{
-        setTextEditor( new EditorJS({
-            holderId: "textEditor",
-            data:'',
-            tools: tools,
-            placeholder:"Let's write an awesome story"
-        }))
+        if(!textEditor.isReady){
+            setTextEditor( new EditorJS({
+                holderId: "textEditor",
+                data: content,
+                tools: tools,
+                placeholder:"Let's write an awesome story"
+            }))
+        }
+        
     },[])
 
     //console.log(blog);
@@ -71,9 +79,9 @@ const BlogEditor = ()=>{
     }
 
     const handlePublishEvent=()=>{
-        if(!banner.length) return toast.error("Upload a blog banner to publish");
+         if(!banner.length) return toast.error("Upload a blog banner to publish");
 
-         if(!title.length) return toast.error("Write title to publish");
+        if(!title.length) return toast.error("Write title to publish");
 
          if(textEditor.isReady){
              textEditor.save().then(data=>{
@@ -91,6 +99,59 @@ const BlogEditor = ()=>{
          }
     }
 
+
+    const handleSaveDraft=(e)=>{
+        if(e.target.className.includes("disable")){
+            return ;
+          }
+      
+          if(!title.length) return toast.error("Write blog title before saving it as a a draft");
+
+          let loadingToast= toast.loading("Saving Draft..");
+      
+          e.target.classList.add('disable');// preventing user to submit again and again while form being published by diabling the publish button
+          
+          if(textEditor.isReady){
+            textEditor.save().then(data=>{
+               
+               let blogObj={
+                title,banner,des,content,tags ,draft:true,
+              }
+          
+              //passing blog-obj and headers for acces_token
+              axios.post(import.meta.env.VITE_SERVER_DOMAIN +"/create-blog",blogObj,{
+                headers:{
+                  'Authorization': `Bearer ${access_token}`
+                }
+              })
+              .then(()=>{
+    
+                 e.target.classList.remove('disable');
+    
+                 toast.dismiss(loadingToast);
+                 toast.success("Draft Saved 👍");
+          
+                 setTimeout(()=>{
+                    navigate("/");
+                 },500);
+                 
+              })
+              .catch(({ response })=>{
+          
+                e.target.classList.remove('disable');
+                toast.dismiss(loadingToast);
+          
+                return toast.error(response.data.error);
+              })
+            })
+            .catch(err=>{
+               console.log(err);
+            })
+        }
+
+          
+    }
+
     return (
     <>
         <nav className="navbar">
@@ -105,7 +166,7 @@ const BlogEditor = ()=>{
                 <button className="btn-dark py-2 " onClick={handlePublishEvent}>
                     Publish
                 </button>
-                <button className="btn-light py-2 ">
+                <button className="btn-light py-2 " onClick={handleSaveDraft}>
                     Save Draft
                 </button>
             </div>
@@ -129,7 +190,8 @@ const BlogEditor = ()=>{
                         </label>
                     </div>
 
-                    <textarea placeholder="Blog Title" className="text-4xl font-medium w-full h-20 outline-none resize-none mt-10 leading-tight placeholder:opacity-50 "
+                    <textarea defaultValue={title}
+                    placeholder="Blog Title" className="text-4xl font-medium w-full h-20 outline-none resize-none mt-10 leading-tight placeholder:opacity-50 "
                     onKeyDown={handleTitleKeyDown}
                     onChange={handleTitleChange}
                     >
