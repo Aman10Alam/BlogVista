@@ -37,7 +37,7 @@ const Editor=()=>{
            <EditorContext.Provider value={{blog,setBlog,editorState,setEditorState,textEditor,setTextEditor}}>
             {   
                 
-                !(userInSession.access_token) ? <Navigate to="/signin"/>
+                !(userInSession) ? <Navigate to="/signin"/>
                 : editorState == "editor"? <BlogEditor/>: <PublishForm/>
                  
                 //  true? <Navigate to="/signin"/>
